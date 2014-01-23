@@ -1,0 +1,24 @@
+## Routes
+---
+/:                     { controller: default, action: index }
+
+/login:                { controller: auth, action: login }
+/login/*:              { controller: auth, action: login-with, args: [ $2 ] }
+/logout:               { controller: auth, action: logout, auth: user }
+/signup:               { controller: auth, action: signup }
+/signup/confirm/*:     { controller: auth, action: confirm, args: [ $3 ] }
+/send-password:        { controller: auth, action: send-password }
+/forgot-password:      { controller: auth, action: forgot-password }
+/reset-password/*:     { controller: auth, action: reset-password, args: [ $2 ]}
+/change-password:      { controller: auth, action: change-password, auth: user}
+/settings:             { controller: auth, action: settings, auth: user }
+
+/about:                { controller: default, action: page, args: [ $1 ] }
+/term:                 { controller: default, action: page, args: [ $1 ] }
+/contact:              { controller: default, action: contact }
+
+/*/**:                 { controller: $1, action: $2|index }
+
+403:                   { controller: auth, action: login-required }
+404:                   { controller: error, action: not-found }
+500:                   { controller: error, action: error }

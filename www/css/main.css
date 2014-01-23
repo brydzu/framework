@@ -1,0 +1,176 @@
+html {
+    position: relative;
+}
+html, body {
+    min-height: 100%;
+    padding-bottom: 100px;
+}
+
+body {
+    padding-top: 70px;
+}
+
+.pwstrength + .progress {
+    margin-top: 5px;
+}
+
+.profile.dropdown > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+/* == Footer */
+
+footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 20px 0 10px 0;
+    background: #333;
+    color: #fff;
+}
+
+footer a {
+    color: #fff;
+}
+footer p {
+    margin: 0;
+    padding: 7px 10px;
+}
+footer .nav-pills > li > a {
+    border-radius: 0;
+    padding: 7px 10px;
+}
+footer .nav-pills > li.attribution a {
+    padding: 0;
+    margin: 5px 15px;
+}
+footer .nav-pills > li > a:hover,
+footer .nav-pills > li > a:focus,
+footer .nav-pills > li.active > a,
+footer .nav-pills > li.active > a:hover,
+footer .nav-pills > li.active > a:focus {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+/* == Sign in == */
+
+.login-links {
+    margin-top: 20px;
+}
+
+.login-links a {
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.social-buttons {
+    margin-bottom: 20px;
+}
+.social-buttons a {
+    margin-bottom: 20px;
+    display: block;
+}
+.social-buttons a > span {
+    display: none;
+    font-weight: 200;
+}
+
+.input-group.full_name input.first_name {
+    width: 40%;
+}
+.input-group.full_name input.last_name {
+    width: 60%;
+    border-left: none;
+}
+
+#signup .password-verdict {
+    position: absolute;
+    font-size: 14px;
+    margin: 5px 10px;
+    z-index: 1;
+}
+.pwstrength + .progress {
+    margin-top: 5px;
+}
+#signup .terms {
+    font-size: 14px;
+    font-weight: 200;
+}
+#signup .terms input {
+    vertical-align: 0;
+}
+
+@media screen and (min-width: 600px) {
+    .social-buttons a > span {
+        display: inline;
+    }
+}
+
+@media screen and (min-width: 768px) {
+    #login .modal-dialog,
+    #signup .modal-dialog,
+    #forgot-password .modal-dialog {
+        width: 730px;
+    }
+    
+    .social-buttons {
+        margin-bottom: 40px;
+    }
+    .social-buttons a {
+        margin-bottom: 5px;
+    }
+}
+
+@media screen and (min-width: 992px) {
+    #login .modal-dialog,
+    #signup .modal-dialog,
+    #forgot-password .modal-dialog {
+        width: 870px;
+    }
+}
+
+/* == Error page == */
+
+hgroup.error-page {
+    padding: 74px 0;
+    text-align: center;
+    position: relative;
+}
+hgroup.error-page h1 {
+    font-size: 32px;
+    line-height: 32px;
+}
+hgroup.error-page h2 {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    font-size: 180px;
+    line-height: 180px;
+    color: #eee;
+    z-index: -1;
+}
+
+@media (min-width: 768px) {
+    hgroup.error-page {
+        padding: 170px 0;
+        text-align: center;
+        position: relative;
+    }
+    hgroup.error-page h1 {
+        font-size: 60px;
+        line-height: 60px;
+    }
+    hgroup.error-page h2 {
+        position: absolute;
+        width: 100%;
+        top: 0;
+        left: 0;
+        font-size: 400px;
+        line-height: 400px;
+        color: #eee;
+        z-index: -1;
+    }
+}

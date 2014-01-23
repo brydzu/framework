@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Update components installed by composer, if composer.lock has changed.
+
+PREV_COMMIT=$1
+POST_COMMIT=$2
+
+if [ -f composer.lock ]; then
+    DIFF=`git diff --shortstat "$PREV_COMMIT".."$POST_COMMIT" composer.lock`
+    [ -z "$DIFF" ] || php composer.phar install
+fi

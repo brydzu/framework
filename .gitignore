@@ -1,0 +1,7 @@
+.DS_Store
+nbproject
+/tmp
+/vendor
+/cache
+/static
+!/static/.htaccess

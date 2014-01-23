@@ -1,0 +1,30 @@
+{
+    "name": "jasny/project",
+    "type": "library",
+    "description": "A skeleton project with hand-picked components",
+    "keywords": ["framework"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Arnold Daniels",
+            "email": "arnold@jasny.net"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "jasny/config": "dev-master",
+        "jasny/mvc": "dev-master",
+        "jasny/dbquery": "dev-master",
+        "jasny/db": "dev-master",
+        "twig/twig": ">=1.10",
+        "jasny/twig-extensions": "dev-master",
+        "jasny/iso": "dev-master",
+        "jasny/social": "dev-master",
+        "ircmaxell/password-compat": "1.*",
+        "gregwar/image": "2.*",
+        "monolog/monolog": "1.*",
+        "phpmailer/phpmailer": "5.*",
+        "embed/embed": "dev-master",
+        "gigablah/sphinxphp": "2.*"
+    }
+}
