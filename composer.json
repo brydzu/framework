@@ -1,5 +1,5 @@
 {
-    "name": "jasny/project",
+    "name": "jasny/phay",
     "type": "library",
     "description": "A skeleton project with hand-picked components",
     "keywords": ["framework"],
@@ -21,10 +21,7 @@
         "jasny/iso": "dev-master",
         "jasny/social": "dev-master",
         "ircmaxell/password-compat": "1.*",
-        "gregwar/image": "2.*",
         "monolog/monolog": "1.*",
-        "phpmailer/phpmailer": "5.*",
-        "embed/embed": "dev-master",
-        "gigablah/sphinxphp": "2.*"
+        "phpmailer/phpmailer": "5.*"
     }
 }
