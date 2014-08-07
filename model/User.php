@@ -3,10 +3,38 @@
 /**
  * Record for `user` table
  */
-class User extends DB\User
+class User extends DB\User implements Jasny\Auth\User
 {
     use AttachImages;
     
+    /**
+     * Get username
+     * 
+     * @return string
+     */
+    public function getUsername()
+    {
+        return $this->email;
+    }
+
+    /**
+     * Get hased password
+     * 
+     * @return string
+     */
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * Get authentication level
+     */
+    public function getAuthLevel()
+    {
+        return $this->auth_level;
+    }
+
     /**
      * Get the full name of the person.
      * 
@@ -27,7 +55,28 @@ class User extends DB\User
         return $this->getFullname();
     }
     
+    
+    /**
+     * Activate the user
+     */
+    public function activate()
+    {
         
+    }
+    
+    /**
+     * Event triggered on login
+     * 
+     * @return boolean
+     */
+    public function onLogin()
+    {
+        if (!$this->status === 'active') return;
+        
+        $this->_getDBTable()->save(['last_login' => new DateTime()]);
+        return true;
+    }
+
     /**
      * Add a social network id to this user
      * 
@@ -70,7 +119,7 @@ class User extends DB\User
      */
     public function getConfirmationHash()
     {
-        return UserTable::generateConfirmationHash($this->id);
+        return Auth::generateConfirmationHash($this);
     }
     
     /**
@@ -80,7 +129,6 @@ class User extends DB\User
      */
     public function getPasswordResetHash() 
     {
-        if ($this->status !== 'active') throw new \Exception("Can't reset the password: User isn't active");
-        return UserTable::generatePasswordResetHash($this->id, $this->password);
+        return Auth::generatePasswordResetHash($this);
     }
 }

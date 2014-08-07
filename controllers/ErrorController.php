@@ -8,24 +8,38 @@
 class ErrorController extends Controller
 {
     /**
+     * 403 forbidden
+     * 
+     * @param string $message
+     * @param string $code     HTTP status code
+     */
+    public function forbiddenAction($message = null, $code = 403)
+    {
+        $this->respondWith($code);
+        $this->view('error/403', compact('message', 'code'));
+    }
+    
+    /**
      * 404 not found
      * 
-     * @param string $code     HTTP response code
      * @param string $message
+     * @param string $code     HTTP status code
      */
-    public function notFoundAction($code=404, $message=null)
+    public function notFoundAction($message = null, $code = 404)
     {
-        $this->view('404', compact('code', 'message'));
+        $this->respondWith($code);
+        $this->view('error/404', compact('message', 'code'));
     }
     
     /**
      * 500 Internal Server Error
      * 
-     * @param string $code     HTTP response code
      * @param string $message
+     * @param string $code     HTTP status code
      */
-    public function errorAction($code=500, $message=null)
+    public function errorAction($message = null, $code = 500)
     {
-        $this->view('500', compact('code', 'message'));
+        $this->respondWith($code);
+        $this->view('error/500', compact('message', 'code'));
     }
 }

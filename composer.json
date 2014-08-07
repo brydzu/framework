@@ -1,7 +1,6 @@
 {
     "name": "jasny/phay",
-    "type": "library",
-    "description": "A skeleton project with hand-picked components",
+    "description": "The intuitive PHP framework",
     "keywords": ["framework"],
     "license": "MIT",
     "authors": [
@@ -12,16 +11,26 @@
     ],
     "require": {
         "php": ">=5.4.0",
-        "jasny/config": "dev-master",
-        "jasny/mvc": "dev-master",
-        "jasny/dbquery": "dev-master",
-        "jasny/db": "dev-master",
+        "jasny/config": "1.*",
+        "jasny/mvc": "2.0.*-dev",
+        "jasny/auth": "dev-master as 0.1",
+        "jasny/db": "1.*",
+        "jasny/formbuilder": "~0.1.0",
         "twig/twig": ">=1.10",
-        "jasny/twig-extensions": "dev-master",
-        "jasny/iso": "dev-master",
+        "jasny/twig-extensions": "1.*",
         "jasny/social": "dev-master",
+        "jasny/iso": "dev-master",
         "ircmaxell/password-compat": "1.*",
+        "phpmailer/phpmailer": "5.*",
+        "jasny/dbvc": "~0.1.0",
         "monolog/monolog": "1.*",
-        "phpmailer/phpmailer": "5.*"
+        "rollbar/rollbar": "~0.7.0"
+    },
+    "require-dev": {
+        "mikey179/vfsStream": "~1.2",
+        "fzaninotto/faker": "~1.3"
+    },
+    "config": {
+        "bin-dir": "bin"
     }
 }

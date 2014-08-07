@@ -1,10 +1,11 @@
 <?php
 
 use Jasny\Config;
-use Monolog\Handler\FirePHPHandler, Monolog\Handler\ChromePHPHandler;
+use Jasny\MVC\Request;
 
 /**
- * Application
+ * The class that bind everything together into an application.
+ * Don't be afraid to customize this class to satisfy your needs.
  */
 class App
 {
@@ -14,8 +15,30 @@ class App
     /** @var Router */
     protected static $router;
     
-    /** @var Monolog\Logger */
+    /** @var Logger */
     protected static $logger;
+    
+    
+    /**
+     * Get application name
+     * 
+     * @return string
+     */
+    public function name()
+    {
+        if (isset(self::config()->app->name)) return self::config()->app->name;
+        return isset($_SERVER['HTTP_HOST']) ? self::domain(false) : null;
+    }
+    
+    /**
+     * Get application version
+     * 
+     * @return string
+     */
+    public function version()
+    {
+        return isset(self::config()->app->version) ? self::config()->app->version : null;
+    }
     
     
     /**
@@ -30,6 +53,7 @@ class App
         return !isset($check) || preg_replace('/\..*/', '', $env) ? $env : false;
     }
     
+    
     /**
      * Get application settings
      * 
@@ -38,32 +62,39 @@ class App
     public static function config()
     {
         if (!isset(self::$config)) {
-            $path = BASE_PATH . '/config';
-            
-            self::$config = new Config("$path/settings.yml");
-            if (file_exists("$path/settings." . self::env() . '.yml'))
-                self::$config->load("$path/settings." . self::env() . '.yml');
+            self::$config = new Config();
+            $files = ['settings.yml', 'settings.' . self::env() . '.yml', 'setting.local.yml'];
 
-            if (self::$config->locale) self::setLocale(self::$config->locale);
+            foreach ($files as $file) {
+                $path = "config/$file";
+                if (file_exists($path)) self::$config->load($path);
+            }
         }
         
         return self::$config;
     }
     
+    
     /**
-     * Set application locale
+     * Set application locale.
+     * @link http://php.net/setlocale
      * 
-     * @return Config $this
+     * @param string $locale  Defaults to 'locale' setting from config.
      */
-    public static function setLocale($locale)
+    public static function setLocale($locale=null)
     {
-        $locale_charset = setlocale(LC_ALL, $locale, "$locale.UTF-8", "$locale.ISO-8859-1");
-        Locale::setDefault($locale_charset);
+        if (!isset($locale)) {
+            if (!isset(self::config()->locale)) return;
+            $locale = self::config()->locale;
+        }
+        
+        $localeCharset = setlocale(LC_ALL, "$locale.UTF-8", $locale, "$locale.ISO-8859-1");
+        Locale::setDefault($localeCharset);
         
         putenv("LANG=$locale");
         define('LANG', substr($locale, 0, 2));
     }
-
+    
     
     /**
      * Get the application router
@@ -73,8 +104,8 @@ class App
     public static function router()
     {
         if (!isset(self::$router)) {
-            self::$router = new Router(new Config(BASE_PATH . '/config/routes.yml'));
-            if (defined('BASE_DIR')) self::$router->setBase(BASE_DIR);
+            self::$router = new Router(new Config('config/routes.yml'));
+            self::$router->setBase(static::getBasePath());
         }
         
         return self::$router;
@@ -82,50 +113,94 @@ class App
     
     
     /**
-     * Send a message to the browsers console.
-     * Works with FireFox (using FirePHP) and Chrome (using Chrome Console)
+     * Get the logger
      * 
-     * @param string|mixed $message
+     * @return Logger
      */
-    public static function debug($message)
+    public static function logger()
     {
-        if (!self::config()->debug) return;
-        
-        if (!isset(self::$logger))
-            self::$logger = new Monolog\Logger('', [new FirePHPHandler(), new ChromePHPHandler()]);
-        
-        if (!is_scalar($message)) $message = json_encode($message, JSON_PRETTY_PRINT);
-        self::$logger->debug($message);
-    }
-    
-    /**
-     * Get full URL
-     * 
-     * @param sting $subdomain
-     * @return string
-     */
-    public static function url($subdomain)
-    {
-        return (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $subdomain . '.' . DOMAIN;
-    }
-
-    
-    /**
-     * Get value of tracking cookie.
-     * Set the tracking cookie if is doesn't exist.
-     * 
-     * @return string
-     */
-    public static function tracking()
-    {
-        if (!isset($_COOKIE['cltr'])) {
-            $_COOKIE['cltr'] = uniqid();
-            
-            // Don't set cookie if user has "Do Not Track" enabled.
-            if (!isset($_SERVER['DNT']) || $_SERVER['DNT'] == 0 || App::env('dev'))
-                setcookie('cltr', $_COOKIE['cltr'], strtotime('now + 1 year'), '/', DOMAIN);
+        if (!isset(self::$logger)) {
+            self::$logger = Logger\Factory::createLogger();
         }
         
-        return $_COOKIE['cltr'];
+        return self::$logger;
+    }
+
+    /**
+     * Enable error handling
+     */
+    public static function handleErrors()
+    {
+        if (Request::getOutputFormat() != 'html') ini_set('html_erors', false);
+        
+        if (isset(self::config()->log)) {
+            $log = self::config()->log;
+            
+            if (!is_bool($log)) Monolog\ErrorHandler::register(App::logger());
+            ini_set('display_errors', $log === false);
+            ini_set('log_errors', $log === true);
+        }
+        
+        App::router()->handleErrors();
+    }
+    
+    
+    /**
+     * Get current domain
+     * 
+     * @param sting $subdomain  Alternative subdomain / module
+     * @return string
+     */
+    public static function domain($subdomain=null)
+    {
+        $domain = $_SERVER['HTTP_HOST'];
+        
+        if (isset($subdomain)) {
+            $regex = preg_quote(defined('MODULE') ? MODULE : 'www', '/');
+            if (isset($_SERVER['DOCUMENT_ROOT'])) $regex .= '|' . preg_quote(basename($_SERVER['DOCUMENT_ROOT']), '/');
+            
+            $domain = ($subdomain ? $subdomain . '.' : '') . preg_replace('/^' . $regex . '\./', '', $domain);
+        }
+            
+        return $domain;
+    }
+
+    /**
+     * Get full url
+     * 
+     * @param sting  Alternative path
+     * @return string
+     */
+    public static function url($path=null)
+    {
+        $protocol = !empty($_SERVER['HTTPS']) ? 'https://' : 'http://';
+        $domain = $_SERVER['HTTP_HOST'];
+
+        $curpath = preg_replace('/\?.*$/', '', $_SERVER['REQUEST_URI']);
+        if (!isset($path)) {
+            $path = $curpath;
+        } elseif ($path[0] !== '/') {
+            $path = dirname($curpath) . '/' . $path;
+        } else {
+            $path = static::getBasePath() . $path;
+        }
+        
+        return $protocol . $domain . $path;
+    }
+    
+    /**
+     * Get the base URL path
+     * 
+     * @return string 
+     */
+    protected static function getBasePath()
+    {
+        if (!isset($_SERVER['DOCUMENT_ROOT'])) return;
+        
+        $docroot = $_SERVER['DOCUMENT_ROOT'];
+        
+        return strpos(getcwd(), $docroot) === 0 && strlen(getcwd()) !== strlen($docroot) ?
+            '/' . trim(substr(getcwd(), strlen($docroot)), '/') :
+            null;
     }
 }

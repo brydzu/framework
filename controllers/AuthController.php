@@ -10,10 +10,11 @@ class AuthController extends Controller
      */
     public function loginAction()
     {
-        if (!Auth::login($_POST['email'], $_POST['password'])) 
-            $this->setFlash('error', "Incorrect e-mail address or password");
+        if (!Auth::login($_POST['email'], $_POST['password'])) {
+            $this->flash->set('error', "Incorrect e-mail address or password");
+        }
         
-        return $this->redirect($this->localReferer() ?: '/');
+        return $this->back();
     }
     
     /**
@@ -21,15 +22,18 @@ class AuthController extends Controller
      */
     public function loginWithAction($service)
     {
-        if ($this->localReferer()) $_SESSION['login_with_referer'] = $this->localReferer();
+        if ($this->request->getLocalReferer()) {
+            $_SESSION['login_with_referer'] = $this->request->getLocalReferer();
+        }
         
-        if (!Auth::loginWith($service))
-            $this->setFlash('error', "Didn't log in with $service");
-
+        if (!Auth::loginWith($service)) {
+            $this->flash->set('error', "Didn't log in with $service");
+        }
+        
         $redirect = isset($_SESSION['login_with_referer']) ? $_SESSION['login_with_referer'] : '/';
         unset($_SESSION['login_with_referer']);
 
-        return $this->redirect($redirect);
+        $this->redirect($redirect);
     }
     
     /**
@@ -38,38 +42,27 @@ class AuthController extends Controller
     public function logoutAction()
     {
         Auth::logout();
-        return $this->redirect($this->localReferer() ?: '/');
+        $this->back();
     }
 
     /**
      * Sign up
-     * @todo Use Form object
      */
     public function signupAction()
     {
-        if (empty($_POST['first_name']) || empty($_POST['last_name']) || empty($_POST['email']) || empty($_POST['password'])) {
-            $error = "All fields are required";
-        } elseif (strlen($_POST['password']) < 4) {
-            $error = "Password should be at least 4 characters long";
-        } elseif (($user = User::fetch(['email'=>$_POST['email']])) && $user->isUser()) {
-            $error = "You already have an account. Did you forget your password?";
+        if (User::fetch(['email'=>$_POST['email']])) {
+            $this->flash->set('error', "You already have an account. Did you forget your password?");
+            $this->back();
         }
         
-        if (isset($error)){
-            $this->setFlash('error', $error);
-            $this->redirect($_SERVER['HTTP_REFERER']);
-        }
-        
-        $values = $_POST;
-        $values['password'] = Auth::password($values['password']);
-
         $user = new User();
+        $values = ['password' => Auth::password($_POST['password'])] + $_POST;
         $user->setValues($values)->save();
 
         Email::load('signup')->render(['user'=>$user])->send($user->email, $user->getFullName());
 
-        $this->setFlash('success', "We've send you an e-mail to complete the sign up");
-        return $this->redirect($this->localReferer() ?: '/');
+        $this->flash->set('success', "We've send you an e-mail to complete the sign up");
+        $this->back();
     }
     
     /**
@@ -81,11 +74,11 @@ class AuthController extends Controller
         if (!$user) $this->notFound("Invalid confirmation hash");
         
         if ($user->status != 'new') {
-            $this->setFlash('error', 'Your account has already been activated');
+            $this->flash->set('error', 'Your account has already been activated');
             return $this->redirect('/');
         }
         
-        $user->setValues(['status'=>'active'])->save();
+        $user->activate();
         Auth::setUser($user);
         
         return $this->redirect('/');
@@ -96,7 +89,7 @@ class AuthController extends Controller
      */
     public function loginRequiredAction()
     {
-        $this->redirect(($this->localReferer() ?: '/') . '#require-login');
+        $this->view('auth/login');
     }
     
     /**
@@ -109,8 +102,8 @@ class AuthController extends Controller
         
         Email::load('reset-password')->render(['user' => $user])->send($user->email, $user->getFullName());
         
-        $this->setFlash('success', "An e-mail with link for reseting password is on it's way");
-        $this->redirect($this->localReferer() ?: '/');
+        $this->flash->set('success', "An e-mail with link for reseting password is on it's way");
+        $this->back();
     }
     
     /**
@@ -128,7 +121,7 @@ class AuthController extends Controller
             $user->setValues(['password' => $password])->save();
             
             Auth::setUser($user);
-            $this->setFlash('success', "Password has been reset successfully.");
+            $this->flash->set('success', "Password has been reset successfully.");
             $this->redirect($user);
         }
         
@@ -142,12 +135,12 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         if($user->password != Auth::password($_POST['old-password'], $user->password)) {
-            $this->setFlash('error', 'Current password is incorrect');
+            $this->flash->set('error', 'Current password is incorrect');
             $this->redirect($this->localReferer() ?: '/');
         }
 
         $user->setValues(['password' => Auth::password($_POST['password'])])->save();
-        $this->setFlash('success', 'Password was changed successfully');            
-        $this->redirect($this->localReferer() ?: '/');
+        $this->flash->set('success', 'Password was changed successfully');            
+        $this->back();
     }
 }

@@ -1,30 +1,36 @@
+app:
+    name:
+    version:
+
 locale: en_EN
 
+cache: true
+log: true
+
 db:
-  host: localhost
-  username: root
-  password: open
-  dbname: project
+    host: localhost
+    username: root
+    password: open
+    dbname: project
 
 email:
-  from: info@example.com
-  from_name: John Doe
+    from: info@example.com
+    from_name: John Doe
 
 secret:
-  signup: 'ENTER SOME RANDOM TEXT HERE'
+    signup: 'ENTER SOME RANDOM TEXT HERE'
 
 social:
-  facebook:
-      client_id:
-      client_secret:
-  twitter:
-      consumer_key:
-      consumer_secret:
-  google:
-      client_id:
-      client_secret:
-      api_key:
-  linkedin:
-      client_id:
-      client_secret:
-
+    facebook:
+        client_id:
+        client_secret:
+    twitter:
+        consumer_key:
+        consumer_secret:
+    google:
+        client_id:
+        client_secret:
+        api_key:
+    linkedin:
+        client_id:
+        client_secret:

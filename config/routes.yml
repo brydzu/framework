@@ -9,16 +9,16 @@
 /signup/confirm/*:     { controller: auth, action: confirm, args: [ $3 ] }
 /send-password:        { controller: auth, action: send-password }
 /forgot-password:      { controller: auth, action: forgot-password }
-/reset-password/*:     { controller: auth, action: reset-password, args: [ $2 ]}
-/change-password:      { controller: auth, action: change-password, auth: user}
-/settings:             { controller: auth, action: settings, auth: user }
+/reset-password/*:     { controller: auth, action: reset-password, args: [ $2 ] }
+/change-password:      { controller: auth, action: change-password, auth: user }
 
 /about:                { controller: default, action: page, args: [ $1 ] }
 /term:                 { controller: default, action: page, args: [ $1 ] }
 /contact:              { controller: default, action: contact }
 
-/*/**:                 { controller: $1, action: $2|index }
+/*/**:                 { controller: $1, action: ~ $REQUEST_METHOD ~ abc ~ $2|index ~, args: [ $3... ] }
 
-403:                   { controller: auth, action: login-required }
+401:                   { controller: auth, action: login-required }
+403:                   { controller: error, action: forbidden }
 404:                   { controller: error, action: not-found }
 500:                   { controller: error, action: error }

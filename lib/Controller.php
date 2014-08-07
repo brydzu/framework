@@ -3,7 +3,7 @@
 /**
  * Base class for controllers.
  */
-abstract class Controller extends \Jasny\Controller
+abstract class Controller extends Jasny\MVC\Controller
 { 
     /**
      * Show a view.

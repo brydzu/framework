@@ -4,8 +4,6 @@ RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule .* - [L]
 
-RewriteRule ^cdn/bootstrap.min.css$ http://cdnjs.cloudflare.com/ajax/libs/jasny-bootstrap/3.0.1-p7/css/bootstrap.min.css  [P,L]
-
 RewriteRule .* /index.php [QSA,L]
 
 ErrorDocument 500 /:500

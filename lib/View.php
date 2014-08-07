@@ -3,7 +3,7 @@
 /**
  * View using Twig
  */
-class View extends Jasny\View_Twig
+class View extends Jasny\MVC\View\Twig
 {
     /**
      * Init Twig environment
@@ -16,10 +16,12 @@ class View extends Jasny\View_Twig
     {
         static::$map['twig'] = __CLASS__;
         
-        if (!isset($path)) $path = BASE_PATH . '/views';
-        if (!isset($cache)) $cache = App::env() == 'prod' ? BASE_PATH . '/cache/view' : false;
+        if (!isset($path)) $path = 'views';
+        if (!isset($cache)) $cache = !empty(App::config()->cache) ? 'cache/view' : false;
                 
         $twig = parent::init($path, $cache);
+        
+        $twig->addGlobal('app', new App());
         $twig->addGlobal('auth', new Auth());
         
         return $twig;

@@ -1,20 +1,32 @@
 <?php
 
-session_start();
-if (preg_match('~^application/json\b~', $_SERVER['HTTP_ACCEPT'])) ini_set('html_errors', false);
+/* Uncomment to enable modules (http://github.com/jasny/phay/README.md#modules) */
+//define('MODULE', basename($_SERVER['DOCUMENT_ROOT']));
 
-define('BASE_PATH', __DIR__);
-define('DOMAIN', preg_replace('/^' . basename($_SERVER['DOCUMENT_ROOT']) . '\./', '', $_SERVER['HTTP_HOST']));
+chdir(__DIR__);
 
 set_include_path(get_include_path() . PATH_SEPARATOR
-    . BASE_PATH . '/lib' . PATH_SEPARATOR
-    . BASE_PATH . '/model' . PATH_SEPARATOR
-    . BASE_PATH . '/controllers' . PATH_SEPARATOR
-    . BASE_PATH . '/forms'
+    . 'lib' . PATH_SEPARATOR
+    . 'model' . PATH_SEPARATOR
+    . 'controllers' . (defined('MODULE') ? '/' . MODULE : '') . PATH_SEPARATOR
+    . 'forms' . (defined('MODULE') ? '/' . MODULE : '')
 );
 
-$loader = require_once(BASE_PATH . "/vendor/autoload.php");
+$loader = require_once("vendor/autoload.php");
 $loader->setUseIncludePath(true);
 
-// The model generator automatically generates Record and Table classes
+// Use Twig to render views (by default)
+View::using('twig');
+
+// Set locale (based on config)
+App::setLocale();
+
+// Enable error handling
+App::handleErrors();
+
+// Enable generator automatically generates Record, Table and Form classes
 DB::enableModelGenerator();
+//Form::enableGenerator();
+
+// Use sessions
+session_start();

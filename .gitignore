@@ -1,7 +1,7 @@
 .DS_Store
+.idea
 nbproject
-/tmp
 /vendor
 /cache
-/static
-!/static/.htaccess
+bower_components
+/bin/dbvc

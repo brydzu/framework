@@ -5,7 +5,7 @@
  *
  * @author arnold
  */
-class Router extends Jasny\Router
+class Router extends Jasny\MVC\Router
 {
     /**
      * Execute the action.
@@ -14,7 +14,10 @@ class Router extends Jasny\Router
      */
     public function execute()
     {
-        if (!Auth::routeAllowed($this->getRoute())) return $this->routeTo(403);
+        $route = $this->getRoute();
+        if (App::config()->debug) App::logger()->debug("Route", compact('route'));
+        
+        if (!Auth::routeAllowed($route)) return $this->routeTo(403);
         return parent::execute();
     }
 }
