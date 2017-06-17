@@ -89,7 +89,7 @@ class OrderController extends BaseController
         $data = $this->getInput();
         App::email('order')->with($data)->sendTo('me');
 
-        $this->success("Your order has been placed");
+        $this->ok("Your order has been placed");
     }
 }
 ```
