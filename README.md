@@ -68,9 +68,11 @@ The default installation of Jasny Framework functions as a landing page.
 At this point users can sign up, building a user base and validating the need of your product prior to launch. If
 you're not building a product that relies on user sign ups, this can easily be disabled.
 
-It is not the intentation to provide a full features landing page with all marketing features you'll find in solutions
-like Unbounce or WordPress. This does allow you to launch your project without hours of starting your project,
-creating the release early, release often mindset that is required to come to a short feedback loop.
+It is not the intentation to provide a full features landing page with all marketing features you'll find in
+as-a-service solutions.
+
+The main point is to allow you to deploy without hours of starting your project. This creates a release early, release
+often mindset that is required to come to a short feedback loop.
 
 ### Wizard of Oz
 
@@ -86,6 +88,8 @@ class OrderController extends BaseController
     {
         $data = $this->getInput();
         App::email('order')->with($data)->sendTo('me');
+
+        $this->success("Your order has been placed");
     }
 }
 ```
@@ -96,9 +100,8 @@ templates.
 ### Prototype
 
 If your solution is technical in nature, building a non-technical MVP can only get you so far. This applies to topics
-like artificial intelligence, data encryption and big data processing. In that case building a learning prototype is
-required to validate your idea.
+like artificial intelligence, data encryption and big data processing. In that case building a prototype might required
+to validate the idea.
 
-PHP is typically not the best fit for these kind of projects and neither is Jasny Framework.
-
+Jasny Framework is typically not the best fit for these kind of MVPs.
 
