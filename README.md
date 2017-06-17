@@ -1,7 +1,7 @@
 Jasny Framework
 ----
 
-> PHP framework for Startups
+#### PHP framework for Startups
 
 [The lean startup](http://theleanstartup.com/) is the defacto standard for startup nowadays. One of the main principles
 is the **build-measure-learn feedback loop**. This principles leads to continues innovation through validated learning,
@@ -61,7 +61,7 @@ Most types of MVPs [do not require a developer to build anything](http://blog.st
 Some typical MVPs do require some development and may provide insights that can't or are more difficult to find through
 other means.
 
-## Landing page
+### Landing page
 
 The default installation of Jasny Framework functions as a landing page.
 
@@ -72,7 +72,7 @@ It is not the intentation to provide a full features landing page with all marke
 like Unbounce or WordPress. This does allow you to launch your project without hours of starting your project,
 creating the release early, release often mindset that is required to come to a short feedback loop.
 
-## Wizard of Oz
+### Wizard of Oz
 
 A wizard of Oz application provides the end user with a user interface. The application will not have a working
 backend and relies a human manually carry out the tasks that would normally be automated.
@@ -93,7 +93,7 @@ class OrderController extends BaseController
 Jasny Framework is great for this type of MVPs. Setting up a basic web UI is a breeze using Jasny Bootstrap and Twig
 templates.
 
-## Prototype
+### Prototype
 
 If your solution is technical in nature, building a non-technical MVP can only get you so far. This applies to topics
 like artificial intelligence, data encryption and big data processing. In that case building a learning prototype is
