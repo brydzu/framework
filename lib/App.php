@@ -1,206 +1,270 @@
 <?php
 
-use Jasny\Config;
-use Jasny\MVC\Request;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Rollbar\Rollbar;
 
 /**
- * The class that bind everything together into an application.
- * Don't be afraid to customize this class to satisfy your needs.
+ * Service locator for the application.
+ * This is actually a wrapper around a container, so if you want to switch to / mix with dependency injection you can.
+ * 
+ * @codeCoverageIgnore
  */
 class App
 {
-    /** @var Config */
-    protected static $config;
+    /**
+     * @var ContainerInterface
+     */
+    public static $container;
+
     
-    /** @var Router */
-    protected static $router;
-    
-    /** @var Logger */
-    protected static $logger;
+    /**
+     * This is a static class, it should not be instantiated.
+     */
+    private function __construct()
+    {
+    }
     
     
     /**
-     * Get application name
+     * Get the app container
      * 
-     * @return string
+     * @return ContainerInterface
+     * @throws LogicException if the container is not set yet
      */
-    public function name()
+    public static function getContainer()
     {
-        if (isset(self::config()->app->name)) return self::config()->app->name;
-        return isset($_SERVER['HTTP_HOST']) ? self::domain(false) : null;
+        if (!isset(self::$container)) {
+            throw new LogicException("This container is not set");
+        }
+        
+        return self::$container;
     }
     
     /**
-     * Get application version
+     * Set or replace the app container
+     * 
+     * @param ContainerInterface $container
+     */
+    public static function setContainer(ContainerInterface $container)
+    {
+        self::$container = $container;
+        
+        self::configureLocale();
+        self::configureDatabase();
+    }
+
+    /**
+     * Set application locale
+     */
+    protected static function configureLocale()
+    {
+        if (!isset(self::config()->locale)) {
+            return;
+        }
+        
+        $locale = self::config()->locale;
+        
+        $locale_charset = setlocale(LC_ALL, "$locale.UTF-8", $locale);
+        Locale::setDefault($locale_charset);
+        putenv("LC_ALL=$locale_charset");
+    }
+    
+    /**
+     * Configure the database connections.
+     * @internal Jasny\DB v2 uses it's own service locator and doesn't support dependency injection yet.
+     */
+    protected static function configureDatabase()
+    {
+        if (!isset(self::config()->db)) {
+            return;
+        }
+        
+        Jasny\DB::$config = self::config()->db;
+    }
+    
+    /**
+     * Remove the container and reset other globals
+     */
+    public static function reset()
+    {
+        self::$container = null;
+        Jasny\DB::resetGlobalState();
+    }
+    
+    
+    /**
+     * Get and invoke an item from the app container.
+     * Will return the item if it is not callable.
+     * 
+     * @param string $name
+     * @param array  $arguments
+     * @return mixed
+     */
+    public static function __callStatic($name, array $arguments)
+    {
+        $item = self::getContainer()->get($name);
+        
+        return is_callable($item) ? $item(...$arguments) : $item;
+    }
+    
+    
+    /**
+     * Get the application name
      * 
      * @return string
      */
-    public function version()
+    public static function name()
+    {
+        return isset(self::config()->app->name) ? self::config()->app->name : null;
+    }
+
+    /**
+     * Get the application name
+     * 
+     * @return string
+     */
+    public static function version()
     {
         return isset(self::config()->app->version) ? self::config()->app->version : null;
     }
-    
+
+    /**
+     * Get the application description
+     * 
+     * @return string
+     */
+    public static function description()
+    {
+        return isset(self::config()->app->description) ? self::config()->app->description : null;
+    }
     
     /**
-     * Get application environment
+     * Get the application environment.
      * 
-     * @param string $check  Only return if env matches
+     * @param string  $check       Only return if env matches
      * @return string|false
      */
-    public static function env($check=null)
+    public static function env($check = null)
     {
-        $env = getenv('APPLICATION_ENV') ?: 'prod';
-        return !isset($check) || preg_replace('/\..*/', '', $env) ? $env : false;
+        $env = getenv('APPLICATION_ENV') ?: 'dev';
+        
+        return !isset($check) || $check === $env || strpos($env, $check . '.') === 0 ? $env : false;
     }
     
     
     /**
-     * Get application settings
-     * 
-     * @return Config
+     * Initialize the application
      */
-    public static function config()
+    public static function init()
     {
-        if (!isset(self::$config)) {
-            self::$config = new Config();
-            $files = ['settings.yml', 'settings.' . self::env() . '.yml', 'setting.local.yml'];
+        self::setContainer(new AppContainer());
+        
+        self::initRollbar();
+        self::initDisplayErrors();
 
-            foreach ($files as $file) {
-                $path = "config/$file";
-                if (file_exists($path)) self::$config->load($path);
+        self::sessionStart();
+    }
+    
+    /**
+     * Get rollbar interface.
+     * @internal Global with no way to reset, do not use in tests.
+     */
+    protected static function initRollbar()
+    {
+        if (Rollbar::logger() === null && !empty(self::config()->rollbar)) {
+            $config = [
+                'code_version' => 'v' . self::version(),
+                'environment' => self::env(null, false),
+                'host' => preg_replace('/^www\./', '', $_SERVER['HTTP_HOST'])
+            ];
+            $config += (array)self::config()->rollbar;
+
+            Rollbar::init($config);
+        }
+    }
+
+    /**
+     * Set the display errors ini setting.
+     * @internal This is changing the global runtime.
+     */
+    protected static function initDisplayErrors()
+    {
+        $config = self::config();
+        
+        if (!empty($config->debug)) {
+            error_reporting(E_ALL & ~E_STRICT);
+            
+            $display_errors = isset($config->display_errors)
+                ? $config->display_errors
+                : (isset($_SERVER['HTTP_X_DISPLAY_ERRORS']) ? $_SERVER['HTTP_X_DISPLAY_ERRORS'] : null);
+
+            if (isset($display_errors)) {
+                ini_set('display_errors', $display_errors);
+            }
+        } else {
+            ini_set('display_error', false);
+            error_reporting(E_ALL & ~E_NOTICE & ~E_USER_NOTICE & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_STRICT);
+        }
+
+        if (!ini_get('display_errors')) {
+            $errorHandler = static::errorHandler();
+
+            $errorHandler->setLogger(self::getContainer()->get('logger'));
+            $errorHandler->converErrorsToExceptions();
+
+            if (!static::env('tests')) {
+                $errorHandler->logUncaught(E_ALL);
             }
         }
-        
-        return self::$config;
+    }
+    
+    /**
+     * Start the session
+     */
+    public static function sessionStart()
+    {
+        session_name('plinkr_session');
+        session_start();
     }
     
     
     /**
-     * Set application locale.
-     * @link http://php.net/setlocale
-     * 
-     * @param string $locale  Defaults to 'locale' setting from config.
+     * Run the application
      */
-    public static function setLocale($locale=null)
+    public static function run()
     {
-        if (!isset($locale)) {
-            if (!isset(self::config()->locale)) return;
-            $locale = self::config()->locale;
-        }
+        self::init();
         
-        $localeCharset = setlocale(LC_ALL, "$locale.UTF-8", $locale, "$locale.ISO-8859-1");
-        Locale::setDefault($localeCharset);
+        $request = self::getContainer()->get(ServerRequestInterface::class);
+        $response = self::getContainer()->get(ResponseInterface::class);
         
-        putenv("LANG=$locale");
-        define('LANG', substr($locale, 0, 2));
+        self::route($request, $response)->emit();
     }
     
     
     /**
-     * Get the application router
+     * Send a message to the browsers console.
+     * Works with FireFox (using FirePHP) and Chrome (using Chrome Console)
      * 
-     * @return Router
+     * @param string|mixed $message
      */
-    public static function router()
+    public static function debug($message)
     {
-        if (!isset(self::$router)) {
-            self::$router = new Router(new Config('config/routes.yml'));
-            self::$router->setBase(static::getBasePath());
+        if (!empty(self::config()->debug)) {
+            return;
         }
         
-        return self::$router;
-    }
-    
-    
-    /**
-     * Get the logger
-     * 
-     * @return Logger
-     */
-    public static function logger()
-    {
-        if (!isset(self::$logger)) {
-            self::$logger = Logger\Factory::createLogger();
+        if (!is_scalar($message)) {
+            $message = json_encode($message, JSON_PRETTY_PRINT);
         }
-        
-        return self::$logger;
-    }
 
-    /**
-     * Enable error handling
-     */
-    public static function handleErrors()
-    {
-        if (Request::getOutputFormat() != 'html') ini_set('html_erors', false);
-        
-        if (isset(self::config()->log)) {
-            $log = self::config()->log;
-            
-            if (!is_bool($log)) Monolog\ErrorHandler::register(App::logger());
-            ini_set('display_errors', $log === false);
-            ini_set('log_errors', $log === true);
+        if (static::env('tests')) {
+            Codeception\Util\Debug::debug($message);
+            return;
         }
         
-        App::router()->handleErrors();
-    }
-    
-    
-    /**
-     * Get current domain
-     * 
-     * @param sting $subdomain  Alternative subdomain / module
-     * @return string
-     */
-    public static function domain($subdomain=null)
-    {
-        $domain = $_SERVER['HTTP_HOST'];
-        
-        if (isset($subdomain)) {
-            $regex = preg_quote(defined('MODULE') ? MODULE : 'www', '/');
-            if (isset($_SERVER['DOCUMENT_ROOT'])) $regex .= '|' . preg_quote(basename($_SERVER['DOCUMENT_ROOT']), '/');
-            
-            $domain = ($subdomain ? $subdomain . '.' : '') . preg_replace('/^' . $regex . '\./', '', $domain);
-        }
-            
-        return $domain;
-    }
-
-    /**
-     * Get full url
-     * 
-     * @param sting  Alternative path
-     * @return string
-     */
-    public static function url($path=null)
-    {
-        $protocol = !empty($_SERVER['HTTPS']) ? 'https://' : 'http://';
-        $domain = $_SERVER['HTTP_HOST'];
-
-        $curpath = preg_replace('/\?.*$/', '', $_SERVER['REQUEST_URI']);
-        if (!isset($path)) {
-            $path = $curpath;
-        } elseif ($path[0] !== '/') {
-            $path = dirname($curpath) . '/' . $path;
-        } else {
-            $path = static::getBasePath() . $path;
-        }
-        
-        return $protocol . $domain . $path;
-    }
-    
-    /**
-     * Get the base URL path
-     * 
-     * @return string 
-     */
-    protected static function getBasePath()
-    {
-        if (!isset($_SERVER['DOCUMENT_ROOT'])) return;
-        
-        $docroot = $_SERVER['DOCUMENT_ROOT'];
-        
-        return strpos(getcwd(), $docroot) === 0 && strlen(getcwd()) !== strlen($docroot) ?
-            '/' . trim(substr(getcwd(), strlen($docroot)), '/') :
-            null;
+        self::logger()->debug($message);
     }
 }

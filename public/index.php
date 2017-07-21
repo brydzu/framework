@@ -1,5 +1,6 @@
 <?php
+chdir(dirname(__DIR__));
 
-require '../include.php';
+require_once 'vendor/autoload.php';
 
-App::router()->execute();
+App::run();

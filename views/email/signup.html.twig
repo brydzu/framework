@@ -1,8 +1,10 @@
-{% extends "email/base.twig.html" %}
+{% extends "@email/base.html.twig" %}
 {% do email.setSubject("Welcome") %}
 
-<h1>Welcome to CHARTleaders</h1>
+{% block content %}
+    <h1>Welcome</h1>
 
-<p>Hi {{ user.first_name }} {{ user.last_name }},</p>
+    <p>Hi {{ user }},</p>
 
-<p><a href="http://www.{{ constant('DOMAIN') }}/signup/confirm/{{ user.confirmationHash }}">Confirm your registration</a></p>
+    <p><a href="{{ url }}" class="signup-link">Confirm your registration</a></p>
+{% endblock %}

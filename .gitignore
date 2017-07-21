@@ -5,3 +5,11 @@ nbproject
 /cache
 bower_components
 /bin/dbvc
+/tmp
+/tests/_output
+/tests/*/*Tester.php
+/tests/_support/_generated
+/bin
+/c3.php
+/config/settings.local.yml
+/config/settings.*.local.yml
