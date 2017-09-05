@@ -1,146 +1,166 @@
 <?php
 
 /**
- * Authentication contoller
+ * Authentication controller
  */
-class AuthController extends Controller
+class AuthController extends BaseController
 {
     /**
-     * Login
+     * Show login page
+     */
+    public function showLoginAction()
+    {
+        return $this->view('auth/login');
+    }
+
+    /**
+     * Perform login with name/password
      */
     public function loginAction()
     {
-        if (!Auth::login($_POST['email'], $_POST['password'])) {
-            $this->flash->set('error', "Incorrect e-mail address or password");
+        $input = $this->getInput();
+        $fail = empty($input['email']) || empty($input['password']) ||
+            !$this->auth->login($input['email'], $input['password']);
+
+        if ($fail) {
+            $this->flash('danger', "User name or password are incorrect.");
+            return $this->redirect('/');
         }
-        
-        return $this->back();
+         
+        $this->flash('success', sprintf("Hi %s, welcome!", (string)$this->auth->user()));
+
+        return $this->redirect('/');
     }
-    
+
     /**
-     * Login with social API (Facebook, Twitter, etc)
+     * Login with social service
+     *
+     * @param string $service
      */
     public function loginWithAction($service)
     {
-        if ($this->request->getLocalReferer()) {
-            $_SESSION['login_with_referer'] = $this->request->getLocalReferer();
+        try {
+            $conn = App::getContainer()->get("social:$service");
+            $conn->auth(App::config()->$service->scope);
+        } catch (Social\AuthException $e) {
+            $this->flash('error', "Sorry, there was an error trying to login via " . ucfirst($service));
+            return $this->redirect('/login');
+        } catch (RuntimeException $e) {
+            $this->flash('error', $e->getMessage());
+            return $this->redirect('/login');
         }
-        
-        if (!Auth::loginWith($service)) {
-            $this->flash->set('error', "Didn't log in with $service");
-        }
-        
-        $redirect = isset($_SESSION['login_with_referer']) ? $_SESSION['login_with_referer'] : '/';
-        unset($_SESSION['login_with_referer']);
 
-        $this->redirect($redirect);
+        $socialUser = $conn->me(['id', 'first_name', 'last_name', 'email']);
+
+        $user = User::fetch([$service . '_id' => $socialUser->getId()])
+            ?: User::fetch(['email' => $socialUser->getEmail()])
+            ?: User::create();
+        
+        $user->addSocialNetwork($service, $socialUser);
+        
+        $validation = $user->validate();
+        if ($validation->failed()) {
+            return $this->badRequest(join(', ', $validation->getErrors()));
+        }
+        
+        $user->save();
+        $this->auth->setUser($user);
+
+        $this->flash('success', sprintf("Hi %s, welcome!", (string)$this->auth->user()));        
+        return $this->redirect('/');
     }
-    
+
     /**
      * Logout
      */
     public function logoutAction()
     {
-        Auth::logout();
-        $this->back();
-    }
-
-    /**
-     * Sign up
-     */
-    public function signupAction()
-    {
-        if (User::fetch(['email'=>$_POST['email']])) {
-            $this->flash->set('error', "You already have an account. Did you forget your password?");
-            $this->back();
-        }
-        
-        $user = new User();
-        $values = ['password' => Auth::password($_POST['password'])] + $_POST;
-        $user->setValues($values)->save();
-
-        Email::load('signup')->render(['user'=>$user])->send($user->email, $user->getFullName());
-
-        $this->flash->set('success', "We've send you an e-mail to complete the sign up");
-        $this->back();
-    }
-    
-    /**
-     * Confirm signup, clicking on the link in the welcome email.
-     */
-    public function confirmAction($hash)
-    {
-        $user = User::fetchForConfirmation($hash) ?: new User();
-        if (!$user) $this->notFound("Invalid confirmation hash");
-        
-        if ($user->status != 'new') {
-            $this->flash->set('error', 'Your account has already been activated');
-            return $this->redirect('/');
-        }
-        
-        $user->activate();
-        Auth::setUser($user);
+        $this->auth->logout();
         
         return $this->redirect('/');
     }
-    
+
     /**
-     * Ask a user to log in
+     * Forget password actions
      */
-    public function loginRequiredAction()
+    public function forgotPasswordAction()
     {
-        $this->view('auth/login');
+        $values = $this->getInput();
+        $user = User::fetch(['email' => $values['email']]);
+
+        if (!$user) {
+            $this->flash('error', "Email adress is incorrect");
+            return $this->redirect('/');
+        }
+
+        $this->sendResetPasswordEmail($user);
+        
+        $this->redirect('/');
     }
     
     /**
-     * Send e-mail to user to restore password
+     * Show form to set new password
      */    
-    public function forgotPasswordAction() 
+    public function showResetPasswordAction()
     {
-        $user = User::fetch(['email'=>$_POST['email']]);
-        if (!$user) $this->notFound("There is no user with this e-mail");
+        $hash = $this->getQueryParam('c');
         
-        Email::load('reset-password')->render(['user' => $user])->send($user->email, $user->getFullName());
-        
-        $this->flash->set('success', "An e-mail with link for reseting password is on it's way");
-        $this->back();
+        $user = $this->auth->fetchUserForConfirmation($hash, 'reset-password', true);
+        if (!$user) {
+            return $this->badRequest("This link is no longer valid");
+        }
+
+        return $this->view('auth/reset-password', compact('hash', 'user'));
     }
     
     /**
      * Set new password
-     *
-     * @param string $hash
      */    
-    public function resetPasswordAction($hash) 
+    public function resetPasswordAction()
     {
-        $user = User::fetchForPasswordReset($hash);
-        if (!$user) $this->notFound("This link is no longer valid");
+        $hash = $this->getQueryParam('c');
 
-        if($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['password']) {
-            $password = Auth::password($_POST['password']);
-            $user->setValues(['password' => $password])->save();
-            
-            Auth::setUser($user);
-            $this->flash->set('success', "Password has been reset successfully.");
-            $this->redirect($user);
+        $user = $this->auth->fetchUserForConfirmation($hash, 'reset-password', true);
+        if (!$user) {
+            return $this->badRequest("This link is no longer valid");
         }
-        
-        $this->view('reset-password', compact('user', 'hash'));
+
+        $values = array_intersect_key($this->getInput(), array_flip(['password']));
+        $values['password'] = $this->auth->hashPassword($values['password']);
+        $values['active'] = true;
+
+        $user->setValues($values);
+        $validation = $user->validate();
+
+        if (!$validation->isSuccess()) {
+            return $this->badRequest($validation->getErrors()[0]);
+        }
+
+        $user->save();
+        $this->auth->setUser($user);
+
+        $this->flash('success', "Password has been reset successfully");
+        $this->redirect('/');        
     }
-    
-    /**
-     * Change password
-     */    
-    public function changePasswordAction() 
-    {
-        $user = Auth::user();
-        if($user->password != Auth::password($_POST['old-password'], $user->password)) {
-            $this->flash->set('error', 'Current password is incorrect');
-            $this->redirect($this->localReferer() ?: '/');
-        }
 
-        $user->setValues(['password' => Auth::password($_POST['password'])])->save();
-        $this->flash->set('success', 'Password was changed successfully');            
-        $this->back();
+    /**
+     * Send email for password reset
+     *
+     * @param User $user
+     */
+    protected function sendResetPasswordEmail(User $user)
+    {
+        $url = (string)$this->getRequest()->getUri()
+            ->withPath('/reset-password')
+            ->withQuery('c=' . $this->auth->getConfirmationToken($user, 'reset-password', true))
+            ->withPort('');
+        
+        // try {
+            App::email('reset-password')->with(compact('user', 'url'))->sendTo($user->email, $user->getFullName());
+            $this->flash('success', "An e-mail with link for reseting password is on it's way");
+        // } catch (Exception $e) {
+        //     trigger_error($e->getMessage(), E_USER_WARNING);
+        //     $this->flash('danger', "Failed to send an e-mail to complete registration");
+        // }
     }
 }

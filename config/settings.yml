@@ -8,10 +8,9 @@ cache: true
 log: true
 
 db:
-    host: localhost
-    username: root
-    password: open
-    dbname: project
+  default:
+    client: mongodb://localhost:27017
+    database: project
 
 email:
     from: info@example.com

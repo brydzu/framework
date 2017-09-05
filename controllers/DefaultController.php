@@ -1,9 +1,12 @@
 <?php
 
-class DefaultController extends Controller
+/**
+ * The default controller
+ */
+class DefaultController extends BaseController
 {
     /**
-     * Home page
+     * Default action for loading base site url
      */
     public function indexAction()
     {

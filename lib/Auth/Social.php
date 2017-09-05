@@ -15,7 +15,7 @@ trait Social
      */
     protected static function getSocialConnection($service)
     {
-        $cfg = App::config()->social;
+        $cfg = \App::config()->social;
         
         switch ($service) {
             case 'linkedin': return new Social\LinkedIn\Connection($cfg->linkedin->client_id, $cfg->linkedin->client_secret, $_SESSION);
@@ -40,7 +40,7 @@ trait Social
         
         try {
             $service = $conn::serviceProvider;
-            $conn->auth(@App::config()->social->$service->scope);
+            $conn->auth(@\App::config()->social->$service->scope);
         } catch (Social\AuthException $e) {
             return false;
         }

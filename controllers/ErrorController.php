@@ -5,7 +5,7 @@
  *
  * @author arnold
  */
-class ErrorController extends Controller
+class ErrorController extends BaseController
 {
     /**
      * 403 forbidden

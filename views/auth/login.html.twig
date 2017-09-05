@@ -5,7 +5,6 @@
         $('#login')
             .modal({ backdrop: 'static' })
             .on('hidden.bs.modal', function() {
-                if (document.referrer.split('/')[2] === window.location.host)
                 if (document.referrer.indexOf(window.location.host) !== -1) {
                     history.go(-1);
                 } else {
