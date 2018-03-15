@@ -1,7 +1,7 @@
 {
-    "name": "jasny/phay",
-    "description": "The intuitive PHP framework",
-    "keywords": ["framework"],
+    "name": "jasny/framework",
+    "description": "PHP framework for startups",
+    "keywords": ["framework", "MVP", "Lean startup"],
     "license": "MIT",
     "authors": [
         {
